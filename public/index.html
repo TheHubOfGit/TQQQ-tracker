@@ -94,16 +94,31 @@
             document.documentElement.style.setProperty('--accent', themeColor);
             document.getElementById('price-change').style.color = themeColor;
 
-            // Update Chart
-            const update = {
-                x: [dates, dates, dates],
-                y: [prices, sma50, sma100],
-                'line.color': [themeColor, 'rgba(255, 215, 0, 0.6)', 'rgba(255, 255, 255, 0.4)']
-            };
+            // Detect SMA crossovers in the current period
+            const crossovers = [];
+            for (let i = 1; i < sma50.length; i++) {
+                // Skip if either SMA is null/undefined
+                if (sma50[i] == null || sma100[i] == null || sma50[i - 1] == null || sma100[i - 1] == null) continue;
 
-            const layoutUpdate = {
-                'xaxis.range': [0, dates.length - 1]
-            };
+                // Bullish crossover: SMA50 crosses above SMA100
+                if (sma50[i - 1] < sma100[i - 1] && sma50[i] > sma100[i]) {
+                    crossovers.push({
+                        index: i,
+                        date: dates[i],
+                        type: 'bullish',
+                        color: '#00c805'
+                    });
+                }
+                // Bearish crossover: SMA100 crosses above SMA50
+                else if (sma50[i - 1] > sma100[i - 1] && sma50[i] < sma100[i]) {
+                    crossovers.push({
+                        index: i,
+                        date: dates[i],
+                        type: 'bearish',
+                        color: '#ff5000'
+                    });
+                }
+            }
 
             // Update Chart - use react for smooth, uniform animation
             const trace1 = {
@@ -135,6 +150,37 @@
                 line: { color: 'rgba(255, 255, 255, 0.4)', width: 1.5 },
                 hovertemplate: '$%{y:.2f}<extra></extra>'
             };
+
+            // Create shapes and annotations for crossovers
+            const shapes = crossovers.map(cross => ({
+                type: 'line',
+                x0: cross.index,
+                x1: cross.index,
+                y0: 0,
+                y1: 1,
+                yref: 'paper',
+                line: {
+                    color: cross.color,
+                    width: 2,
+                    dash: 'dot'
+                }
+            }));
+
+            const annotations = crossovers.map(cross => ({
+                x: cross.index,
+                y: 1,
+                yref: 'paper',
+                text: cross.date,
+                showarrow: false,
+                font: {
+                    size: 9,
+                    color: cross.color
+                },
+                textangle: -90,
+                xanchor: 'left',
+                yanchor: 'bottom',
+                xshift: 5
+            }));
 
             const layout = {
                 paper_bgcolor: 'rgba(0,0,0,0)',
@@ -170,7 +216,9 @@
                 transition: {
                     duration: 500,
                     easing: 'cubic-in-out'
-                }
+                },
+                shapes: shapes,
+                annotations: annotations
             };
 
             const config = {
