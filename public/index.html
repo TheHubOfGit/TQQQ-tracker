@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TQQQ Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>TQQQ Tracker</h1>
+            <p>Hourly Price Action with EMA 9 & 12</p>
+            <div id="last-updated">Loading...</div>
+        </header>
+
+        <div class="chart-container">
+            <div id="chart"></div>
+        </div>
+
+        <footer>
+            <p>Data updated hourly via GitHub Actions</p>
+        </footer>
+    </div>
+
+    <script>
+        async function fetchData() {
+            try {
+                // Fetch from GitHub Raw to bypass Cloudflare build cache/limits for data
+                const response = await fetch('https://raw.githubusercontent.com/TheHubOfGit/TQQQ-tracker/main/public/data.json');
+                const data = await response.json();
+
+                const trace1 = {
+                    x: data.dates,
+                    y: data.prices,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'TQQQ Price',
+                    line: { color: '#00d4ff', width: 2 }
+                };
+
+                const trace2 = {
+                    x: data.dates,
+                    y: data.ema9,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'EMA 9',
+                    line: { color: '#00ff9d', width: 1.5 }
+                };
+
+                const trace3 = {
+                    x: data.dates,
+                    y: data.ema12,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'EMA 12',
+                    line: { color: '#ff00d4', width: 1.5 }
+                };
+
+                const layout = {
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {
+                        family: 'Inter, sans-serif',
+                        color: '#e0e0e0'
+                    },
+                    xaxis: {
+                        gridcolor: '#333',
+                        zerolinecolor: '#333'
+                    },
+                    yaxis: {
+                        gridcolor: '#333',
+                        zerolinecolor: '#333'
+                    },
+                    margin: { t: 20, r: 20, b: 40, l: 40 },
+                    showlegend: true,
+                    legend: {
+                        x: 0,
+                        y: 1,
+                        bgcolor: 'rgba(0,0,0,0.5)'
+                    },
+                    hovermode: 'x unified'
+                };
+
+                const config = {
+                    responsive: true,
+                    displayModeBar: false
+                };
+
+                Plotly.newPlot('chart', [trace1, trace2, trace3], layout, config);
+
+                // Update timestamp
+                const lastDate = new Date(data.dates[data.dates.length - 1]);
+                document.getElementById('last-updated').textContent = `Last Data Point: ${lastDate.toLocaleString()}`;
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('last-updated').textContent = 'Error loading data';
+            }
+        }
+
+        fetchData();
+    </script>
+</body>
+
+</html>
