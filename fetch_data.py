@@ -68,50 +68,64 @@ def fetch_and_process_data():
     print("Data updated successfully!")
 
     # --- Notification Logic ---
-    # Check for crossover TODAY (last data point)
+    # Check for crossovers TODAY (last data point)
     # We only notify if the crossover happened on the LAST day to avoid spamming old alerts
     import requests
     
-    # Get last two valid values for SMA50 and SMA100
-    # We need to filter out None values to check crossover
-    valid_sma50 = [x for x in data['sma50'] if x is not None]
-    valid_sma100 = [x for x in data['sma100'] if x is not None]
+    def check_crossover(line1_data, line2_data, name1, name2):
+        """Check for crossover between two indicator lines"""
+        # Get last two valid values
+        valid_line1 = [x for x in line1_data if x is not None]
+        valid_line2 = [x for x in line2_data if x is not None]
+        
+        if len(valid_line1) >= 2 and len(valid_line2) >= 2:
+            today_line1 = valid_line1[-1]
+            prev_line1 = valid_line1[-2]
+            today_line2 = valid_line2[-1]
+            prev_line2 = valid_line2[-2]
+            
+            # Bullish Crossover (faster crosses above slower)
+            if prev_line1 < prev_line2 and today_line1 > today_line2:
+                return {
+                    'type': 'bullish',
+                    'title': f'🚀 TQQQ Bullish Crossover! ({name1}/{name2})',
+                    'msg': f'{name1} ({today_line1}) has crossed ABOVE {name2} ({today_line2}). Potential buy signal.',
+                    'tags': 'rocket,moneybag'
+                }
+            
+            # Bearish Crossover (slower crosses above faster)
+            elif prev_line1 > prev_line2 and today_line1 < today_line2:
+                return {
+                    'type': 'bearish',
+                    'title': f'⚠️ TQQQ Bearish Crossover! ({name1}/{name2})',
+                    'msg': f'{name1} ({today_line1}) has crossed BELOW {name2} ({today_line2}). Potential sell signal.',
+                    'tags': 'warning,chart_with_downwards_trend'
+                }
+        
+        return None
     
-    if len(valid_sma50) >= 2 and len(valid_sma100) >= 2:
-        today_sma50 = valid_sma50[-1]
-        prev_sma50 = valid_sma50[-2]
-        today_sma100 = valid_sma100[-1]
-        prev_sma100 = valid_sma100[-2]
-        
-        msg = ""
-        title = ""
-        tags = ""
-        
-        # Bullish Crossover
-        if prev_sma50 < prev_sma100 and today_sma50 > today_sma100:
-            title = "🚀 TQQQ Bullish Crossover!"
-            msg = f"SMA50 ({today_sma50}) has crossed ABOVE SMA100 ({today_sma100}). Potential buy signal."
-            tags = "rocket,moneybag"
-            
-        # Bearish Crossover
-        elif prev_sma50 > prev_sma100 and today_sma50 < today_sma100:
-            title = "⚠️ TQQQ Bearish Crossover!"
-            msg = f"SMA50 ({today_sma50}) has crossed BELOW SMA100 ({today_sma100}). Potential sell signal."
-            tags = "warning,chart_with_downwards_trend"
-            
-        if msg:
+    # Check SMA 50/100 crossover
+    sma_crossover = check_crossover(data['sma50'], data['sma100'], 'SMA50', 'SMA100')
+    
+    # Check EMA 9/12 crossover
+    ema_crossover = check_crossover(data['ema9'], data['ema12'], 'EMA9', 'EMA12')
+    
+    # Send notifications for any detected crossovers
+    for crossover in [sma_crossover, ema_crossover]:
+        if crossover:
             try:
                 requests.post("https://ntfy.sh/tqqq_tracker_alerts",
-                    data=msg.encode('utf-8'),
+                    data=crossover['msg'].encode('utf-8'),
                     headers={
-                        "Title": title.encode('utf-8'),
-                        "Tags": tags,
+                        "Title": crossover['title'].encode('utf-8'),
+                        "Tags": crossover['tags'],
                         "Click": "https://tqqq-tracker.pages.dev"
                     }
                 )
-                print(f"Notification sent: {title}")
+                print(f"Notification sent: {crossover['title']}")
             except Exception as e:
                 print(f"Failed to send notification: {e}")
+
 
 
 if __name__ == "__main__":
