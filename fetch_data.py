@@ -9,35 +9,48 @@ def fetch_and_process_data():
         os.makedirs('public')
 
     # Fetch TQQQ data
-    # Interval: 15m, Period: 60d (max for 15m data)
+    # Interval: 1d, Period: 2y (to support SMA100 and give context)
     ticker = yf.Ticker("TQQQ")
-    df = ticker.history(period="60d", interval="15m")
+    df = ticker.history(period="2y", interval="1d")
 
-    # Calculate EMAs
-    # Note: yfinance returns a DataFrame with a DatetimeIndex
-    df['EMA9'] = df['Close'].ewm(span=9, adjust=False).mean()
-    df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
+    # Calculate SMAs
+    df['SMA50'] = df['Close'].rolling(window=50).mean()
+    df['SMA100'] = df['Close'].rolling(window=100).mean()
 
     # Get previous day's close for "Today's Return" calculation
-    # We fetch 5 days of daily data to be safe and get the last completed day
-    daily_df = ticker.history(period="5d", interval="1d")
-    # The last row is today (incomplete), so we want the one before it
-    if len(daily_df) >= 2:
-        prev_close = daily_df['Close'].iloc[-2]
+    if len(df) >= 2:
+        prev_close = df['Close'].iloc[-2]
     else:
-        prev_close = df['Close'].iloc[0] # Fallback
+        prev_close = df['Close'].iloc[0]
 
     current_price = df['Close'].iloc[-1]
     price_change = current_price - prev_close
     percent_change = (price_change / prev_close) * 100
 
+    # Slice to keep only the last 90 days for the chart
+    # We do this AFTER calculating SMAs so the SMAs are accurate
+    df = df.iloc[-90:]
+
+    # Format dates
+    # For historical days: YYYY-MM-DD
+    # For today (last point): YYYY-MM-DD HH:MM AM/PM (to show freshness)
+    dates = df.index.strftime('%Y-%m-%d').tolist()
+    
+    # Add current time to the last date point to satisfy "latest datapoint" visibility
+    from datetime import datetime
+    import pytz
+    
+    # Get current time in ET (Market time)
+    tz = pytz.timezone('US/Eastern')
+    now = datetime.now(tz)
+    dates[-1] = now.strftime('%Y-%m-%d %I:%M %p')
+
     # Prepare data for JSON export
-    # We need lists for Plotly
     data = {
-        'dates': df.index.strftime('%Y-%m-%d %H:%M:%S').tolist(),
+        'dates': dates,
         'prices': df['Close'].round(2).tolist(),
-        'ema9': df['EMA9'].round(2).tolist(),
-        'ema12': df['EMA12'].round(2).tolist(),
+        'sma50': df['SMA50'].round(2).fillna(0).tolist(),
+        'sma100': df['SMA100'].round(2).fillna(0).tolist(),
         'meta': {
             'current_price': round(current_price, 2),
             'price_change': round(price_change, 2),

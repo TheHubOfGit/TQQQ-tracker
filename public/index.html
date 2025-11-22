@@ -68,27 +68,27 @@
                     mode: 'lines',
                     name: 'TQQQ',
                     line: { color: themeColor, width: 2 },
-                    hoverinfo: 'y'
+                    hovertemplate: '$%{y:.2f}<extra></extra>'
                 };
 
                 const trace2 = {
                     x: data.dates,
-                    y: data.ema9,
+                    y: data.sma50,
                     type: 'scatter',
                     mode: 'lines',
-                    name: 'EMA 9',
-                    line: { color: 'rgba(255, 255, 255, 0.5)', width: 1 },
-                    hoverinfo: 'y'
+                    name: 'SMA 50 (Daily)',
+                    line: { color: 'rgba(255, 215, 0, 0.6)', width: 1.5 }, // Gold
+                    hovertemplate: '$%{y:.2f}<extra></extra>'
                 };
 
                 const trace3 = {
                     x: data.dates,
-                    y: data.ema12,
+                    y: data.sma100,
                     type: 'scatter',
                     mode: 'lines',
-                    name: 'EMA 12',
-                    line: { color: 'rgba(255, 255, 255, 0.3)', width: 1 },
-                    hoverinfo: 'y'
+                    name: 'SMA 100 (Daily)',
+                    line: { color: 'rgba(255, 255, 255, 0.4)', width: 1.5 }, // White/Grey
+                    hovertemplate: '$%{y:.2f}<extra></extra>'
                 };
 
                 const layout = {
@@ -96,10 +96,12 @@
                     plot_bgcolor: 'rgba(0,0,0,0)',
                     font: { family: 'DIN, Inter, sans-serif', color: '#fff' },
                     xaxis: {
+                        type: 'category', // Removes gaps (non-trading days/hours)
                         showgrid: false,
                         zeroline: false,
                         showticklabels: false,
                         fixedrange: true
+                        // hoverformat removed because we are sending formatted strings
                     },
                     yaxis: {
                         showgrid: false,
@@ -108,11 +110,18 @@
                         fixedrange: true
                     },
                     margin: { t: 20, r: 0, b: 20, l: 0 },
-                    showlegend: false,
+                    showlegend: true,
+                    legend: {
+                        x: 0,
+                        y: 1,
+                        bgcolor: 'rgba(0,0,0,0)',
+                        font: { size: 10, color: 'rgba(255,255,255,0.5)' }
+                    },
                     hovermode: 'x unified',
                     hoverlabel: {
-                        bgcolor: '#333',
-                        font: { color: '#fff' }
+                        bgcolor: '#1e1e1e',
+                        font: { color: '#fff' },
+                        bordercolor: '#333'
                     }
                 };
 
