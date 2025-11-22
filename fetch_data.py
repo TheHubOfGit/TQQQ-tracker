@@ -27,10 +27,6 @@ def fetch_and_process_data():
     price_change = current_price - prev_close
     percent_change = (price_change / prev_close) * 100
 
-    # Slice to keep only the last 90 days for the chart
-    # We do this AFTER calculating SMAs so the SMAs are accurate
-    df = df.iloc[-90:]
-
     # Format dates
     # For historical days: Nov 21, 2025
     # For today (last point): Nov 21, 2025, 11:08 PM
