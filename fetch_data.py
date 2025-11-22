@@ -32,9 +32,9 @@ def fetch_and_process_data():
     df = df.iloc[-90:]
 
     # Format dates
-    # For historical days: YYYY-MM-DD
-    # For today (last point): YYYY-MM-DD HH:MM AM/PM (to show freshness)
-    dates = df.index.strftime('%Y-%m-%d').tolist()
+    # For historical days: Nov 21, 2025
+    # For today (last point): Nov 21, 2025, 11:08 PM
+    dates = df.index.strftime('%b %d, %Y').tolist()
     
     # Add current time to the last date point to satisfy "latest datapoint" visibility
     from datetime import datetime
@@ -43,7 +43,7 @@ def fetch_and_process_data():
     # Get current time in ET (Market time)
     tz = pytz.timezone('US/Eastern')
     now = datetime.now(tz)
-    dates[-1] = now.strftime('%Y-%m-%d %I:%M %p')
+    dates[-1] = now.strftime('%b %d, %Y, %I:%M %p')
 
     # Prepare data for JSON export
     data = {
