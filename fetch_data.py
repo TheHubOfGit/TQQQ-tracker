@@ -45,8 +45,8 @@ def fetch_and_process_data():
     data = {
         'dates': dates,
         'prices': df['Close'].round(2).tolist(),
-        'sma50': df['SMA50'].round(2).fillna(0).tolist(),
-        'sma100': df['SMA100'].round(2).fillna(0).tolist(),
+        'sma50': df['SMA50'].round(2).where(pd.notnull(df['SMA50']), None).tolist(),
+        'sma100': df['SMA100'].round(2).where(pd.notnull(df['SMA100']), None).tolist(),
         'meta': {
             'current_price': round(current_price, 2),
             'price_change': round(price_change, 2),
