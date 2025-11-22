@@ -13,9 +13,11 @@ def fetch_and_process_data():
     ticker = yf.Ticker("TQQQ")
     df = ticker.history(period="2y", interval="1d")
 
-    # Calculate SMAs
+    # Calculate SMAs and EMAs
     df['SMA50'] = df['Close'].rolling(window=50).mean()
     df['SMA100'] = df['Close'].rolling(window=100).mean()
+    df['EMA9'] = df['Close'].ewm(span=9, adjust=False).mean()
+    df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
 
     # Get previous day's close for "Today's Return" calculation
     if len(df) >= 2:
@@ -42,11 +44,15 @@ def fetch_and_process_data():
     dates[-1] = now.strftime('%b %d, %Y, %I:%M %p')
 
     # Prepare data for JSON export
+    # Replace NaN with None (becomes null in JSON)
+    import numpy as np
     data = {
         'dates': dates,
         'prices': df['Close'].round(2).tolist(),
         'sma50': [x if pd.notnull(x) else None for x in df['SMA50'].round(2)],
         'sma100': [x if pd.notnull(x) else None for x in df['SMA100'].round(2)],
+        'ema9': [x if pd.notnull(x) else None for x in df['EMA9'].round(2)],
+        'ema12': [x if pd.notnull(x) else None for x in df['EMA12'].round(2)],
         'meta': {
             'current_price': round(current_price, 2),
             'price_change': round(price_change, 2),

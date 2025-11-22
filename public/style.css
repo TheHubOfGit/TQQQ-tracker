@@ -91,25 +91,43 @@ header {
 }
 
 /* Time Filters (Visual only for now) */
-.time-filters {
+.controls-row {
     display: flex;
     justify-content: space-between;
-    border-bottom: 1px solid #222;
-    padding-bottom: 0.5rem;
-    margin-bottom: 2rem;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
-.time-filters button {
+.time-filters,
+.indicator-filters {
+    display: flex;
+    background: #1e1e1e;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.time-filters button,
+.indicator-filters button {
     background: none;
     border: none;
-    color: var(--text-secondary);
-    font-weight: 700;
-    font-size: 0.85rem;
+    color: #888;
+    padding: 8px 16px;
+    border-radius: 6px;
     cursor: pointer;
-    padding: 0.5rem;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s;
 }
 
-.time-filters button.active {
+.time-filters button:hover,
+.indicator-filters button:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.time-filters button.active,
+.indicator-filters button.active {
+    background: #333;
     color: var(--accent);
 }
 

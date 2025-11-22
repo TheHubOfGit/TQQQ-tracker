@@ -27,10 +27,16 @@
             <div id="chart"></div>
         </div>
 
-        <div class="time-filters">
-            <button onclick="updatePeriod('3M')" id="btn-3M">3M</button>
-            <button onclick="updatePeriod('6M')" id="btn-6M">6M</button>
-            <button onclick="updatePeriod('1Y')" id="btn-1Y">1Y</button>
+        <div class="controls-row">
+            <div class="time-filters">
+                <button onclick="updatePeriod('3M')" id="btn-3M">3M</button>
+                <button onclick="updatePeriod('6M')" id="btn-6M">6M</button>
+                <button onclick="updatePeriod('1Y')" id="btn-1Y">1Y</button>
+            </div>
+            <div class="indicator-filters">
+                <button onclick="setIndicator('SMA')" id="btn-SMA" class="active">SMA 50/100</button>
+                <button onclick="setIndicator('EMA')" id="btn-EMA">EMA 9/12</button>
+            </div>
         </div>
 
         <footer>
@@ -40,6 +46,8 @@
 
     <script>
         let allData = {};
+        let currentPeriod = '3M';
+        let currentIndicator = 'SMA'; // 'SMA' or 'EMA'
 
         async function fetchData() {
             try {
@@ -48,8 +56,8 @@
                 const data = await response.json();
                 allData = data;
 
-                // Initial render (default to 3M)
-                updatePeriod('3M');
+                // Initial render
+                renderChart();
 
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -58,13 +66,25 @@
         }
 
         function updatePeriod(period) {
-            // Update active button
+            currentPeriod = period;
             document.querySelectorAll('.time-filters button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`btn-${period}`).classList.add('active');
+            renderChart();
+        }
 
-            // Determine slice count (approx trading days)
+        function setIndicator(type) {
+            currentIndicator = type;
+            document.querySelectorAll('.indicator-filters button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${type}`).classList.add('active');
+            renderChart();
+        }
+
+        function renderChart() {
+            if (!allData.dates) return;
+
+            // Determine slice count
             let sliceCount;
-            switch (period) {
+            switch (currentPeriod) {
                 case '3M': sliceCount = 63; break;
                 case '6M': sliceCount = 126; break;
                 case '1Y': sliceCount = 252; break;
@@ -74,10 +94,22 @@
             // Slice data
             const dates = allData.dates.slice(-sliceCount);
             const prices = allData.prices.slice(-sliceCount);
-            const sma50 = allData.sma50.slice(-sliceCount);
-            const sma100 = allData.sma100.slice(-sliceCount);
 
-            // Update Header Stats based on range
+            // Select Indicator Data
+            let line1, line2, name1, name2;
+            if (currentIndicator === 'SMA') {
+                line1 = allData.sma50.slice(-sliceCount);
+                line2 = allData.sma100.slice(-sliceCount);
+                name1 = 'SMA 50 (Daily)';
+                name2 = 'SMA 100 (Daily)';
+            } else {
+                line1 = allData.ema9.slice(-sliceCount);
+                line2 = allData.ema12.slice(-sliceCount);
+                name1 = 'EMA 9 (Daily)';
+                name2 = 'EMA 12 (Daily)';
+            }
+
+            // Update Header Stats
             const currentPrice = prices[prices.length - 1];
             const startPrice = prices[0];
             const priceChange = currentPrice - startPrice;
@@ -87,40 +119,29 @@
             document.getElementById('current-price').textContent = `$${currentPrice.toFixed(2)}`;
             const sign = isPositive ? '+' : '';
             document.getElementById('price-change').textContent = `${sign}${priceChange.toFixed(2)} (${percentChange.toFixed(2)}%)`;
-            document.querySelector('.period').textContent = period === '1D' ? 'Today' : `Past ${period}`;
+            document.querySelector('.period').textContent = currentPeriod === '1D' ? 'Today' : `Past ${currentPeriod}`;
 
             // Update Colors
             const themeColor = isPositive ? '#00c805' : '#ff5000';
             document.documentElement.style.setProperty('--accent', themeColor);
             document.getElementById('price-change').style.color = themeColor;
 
-            // Detect SMA crossovers in the current period
+            // Detect Crossovers
             const crossovers = [];
-            for (let i = 1; i < sma50.length; i++) {
-                // Skip if either SMA is null/undefined
-                if (sma50[i] == null || sma100[i] == null || sma50[i - 1] == null || sma100[i - 1] == null) continue;
+            for (let i = 1; i < line1.length; i++) {
+                if (line1[i] == null || line2[i] == null || line1[i - 1] == null || line2[i - 1] == null) continue;
 
-                // Bullish crossover: SMA50 crosses above SMA100
-                if (sma50[i - 1] < sma100[i - 1] && sma50[i] > sma100[i]) {
-                    crossovers.push({
-                        index: i,
-                        date: dates[i],
-                        type: 'bullish',
-                        color: '#00c805'
-                    });
+                // Bullish: Line1 (Fast) crosses above Line2 (Slow)
+                if (line1[i - 1] < line2[i - 1] && line1[i] > line2[i]) {
+                    crossovers.push({ index: i, date: dates[i], type: 'bullish', color: '#00c805' });
                 }
-                // Bearish crossover: SMA100 crosses above SMA50
-                else if (sma50[i - 1] > sma100[i - 1] && sma50[i] < sma100[i]) {
-                    crossovers.push({
-                        index: i,
-                        date: dates[i],
-                        type: 'bearish',
-                        color: '#ff5000'
-                    });
+                // Bearish: Line2 (Slow) crosses above Line1 (Fast)
+                else if (line1[i - 1] > line2[i - 1] && line1[i] < line2[i]) {
+                    crossovers.push({ index: i, date: dates[i], type: 'bearish', color: '#ff5000' });
                 }
             }
 
-            // Update Chart - use react for smooth, uniform animation
+            // Chart Traces
             const trace1 = {
                 x: dates,
                 y: prices,
@@ -133,25 +154,25 @@
 
             const trace2 = {
                 x: dates,
-                y: sma50,
+                y: line1,
                 type: 'scatter',
                 mode: 'lines',
-                name: 'SMA 50 (Daily)',
-                line: { color: 'rgba(255, 215, 0, 0.6)', width: 1.5 },
+                name: name1,
+                line: { color: 'rgba(255, 215, 0, 0.6)', width: 1.5 }, // Gold
                 hovertemplate: '$%{y:.2f}<extra></extra>'
             };
 
             const trace3 = {
                 x: dates,
-                y: sma100,
+                y: line2,
                 type: 'scatter',
                 mode: 'lines',
-                name: 'SMA 100 (Daily)',
-                line: { color: 'rgba(255, 255, 255, 0.4)', width: 1.5 },
+                name: name2,
+                line: { color: 'rgba(255, 255, 255, 0.4)', width: 1.5 }, // White/Grey
                 hovertemplate: '$%{y:.2f}<extra></extra>'
             };
 
-            // Create shapes and annotations for crossovers
+            // Shapes & Annotations
             const shapes = crossovers.map(cross => ({
                 type: 'line',
                 x0: cross.index,
@@ -159,11 +180,7 @@
                 y0: 0,
                 y1: 1,
                 yref: 'paper',
-                line: {
-                    color: cross.color,
-                    width: 2,
-                    dash: 'dot'
-                }
+                line: { color: cross.color, width: 2, dash: 'dot' }
             }));
 
             const annotations = crossovers.map(cross => ({
@@ -172,10 +189,7 @@
                 yref: 'paper',
                 text: cross.date,
                 showarrow: false,
-                font: {
-                    size: 9,
-                    color: cross.color
-                },
+                font: { size: 9, color: cross.color },
                 textangle: -90,
                 xanchor: 'left',
                 yanchor: 'bottom',
@@ -201,31 +215,15 @@
                 },
                 margin: { t: 20, r: 0, b: 20, l: 0 },
                 showlegend: true,
-                legend: {
-                    x: 0,
-                    y: 1,
-                    bgcolor: 'rgba(0,0,0,0)',
-                    font: { size: 10, color: 'rgba(255,255,255,0.5)' }
-                },
+                legend: { x: 0, y: 1, bgcolor: 'rgba(0,0,0,0)', font: { size: 10, color: 'rgba(255,255,255,0.5)' } },
                 hovermode: 'x unified',
-                hoverlabel: {
-                    bgcolor: '#1e1e1e',
-                    font: { color: '#fff' },
-                    bordercolor: '#333'
-                },
-                transition: {
-                    duration: 500,
-                    easing: 'cubic-in-out'
-                },
+                hoverlabel: { bgcolor: '#1e1e1e', font: { color: '#fff' }, bordercolor: '#333' },
+                transition: { duration: 500, easing: 'cubic-in-out' },
                 shapes: shapes,
                 annotations: annotations
             };
 
-            const config = {
-                responsive: true,
-                displayModeBar: false,
-                staticPlot: false
-            };
+            const config = { responsive: true, displayModeBar: false, staticPlot: false };
 
             // If chart exists, use react for smooth update
             if (document.getElementById('chart').data) {
