@@ -105,95 +105,85 @@
                 'xaxis.range': [0, dates.length - 1]
             };
 
-            // If chart exists, animate update
+            // Update Chart - use react for smooth, uniform animation
+            const trace1 = {
+                x: dates,
+                y: prices,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'TQQQ',
+                line: { color: themeColor, width: 2 },
+                hovertemplate: '$%{y:.2f}<extra></extra>'
+            };
+
+            const trace2 = {
+                x: dates,
+                y: sma50,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SMA 50 (Daily)',
+                line: { color: 'rgba(255, 215, 0, 0.6)', width: 1.5 },
+                hovertemplate: '$%{y:.2f}<extra></extra>'
+            };
+
+            const trace3 = {
+                x: dates,
+                y: sma100,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SMA 100 (Daily)',
+                line: { color: 'rgba(255, 255, 255, 0.4)', width: 1.5 },
+                hovertemplate: '$%{y:.2f}<extra></extra>'
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'DIN, Inter, sans-serif', color: '#fff' },
+                xaxis: {
+                    type: 'category',
+                    showgrid: false,
+                    zeroline: false,
+                    showticklabels: false,
+                    fixedrange: true
+                },
+                yaxis: {
+                    showgrid: false,
+                    zeroline: false,
+                    showticklabels: false,
+                    fixedrange: true
+                },
+                margin: { t: 20, r: 0, b: 20, l: 0 },
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1,
+                    bgcolor: 'rgba(0,0,0,0)',
+                    font: { size: 10, color: 'rgba(255,255,255,0.5)' }
+                },
+                hovermode: 'x unified',
+                hoverlabel: {
+                    bgcolor: '#1e1e1e',
+                    font: { color: '#fff' },
+                    bordercolor: '#333'
+                },
+                transition: {
+                    duration: 500,
+                    easing: 'cubic-in-out'
+                }
+            };
+
+            const config = {
+                responsive: true,
+                displayModeBar: false,
+                staticPlot: false
+            };
+
+            // If chart exists, use react for smooth update
             if (document.getElementById('chart').data) {
-                Plotly.animate('chart', {
-                    data: [
-                        { x: dates, y: prices, line: { color: themeColor, width: 2 } },
-                        { x: dates, y: sma50 },
-                        { x: dates, y: sma100 }
-                    ],
-                    layout: layoutUpdate
-                }, {
-                    transition: {
-                        duration: 500,
-                        easing: 'cubic-in-out'
-                    },
-                    frame: {
-                        duration: 500
-                    }
-                });
+                Plotly.react('chart', [trace1, trace2, trace3], layout, config);
             } else {
                 // First load
-                const trace1 = {
-                    x: dates,
-                    y: prices,
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: 'TQQQ',
-                    line: { color: themeColor, width: 2 },
-                    hovertemplate: '$%{y:.2f}<extra></extra>'
-                };
-
-                const trace2 = {
-                    x: dates,
-                    y: sma50,
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: 'SMA 50 (Daily)',
-                    line: { color: 'rgba(255, 215, 0, 0.6)', width: 1.5 },
-                    hovertemplate: '$%{y:.2f}<extra></extra>'
-                };
-
-                const trace3 = {
-                    x: dates,
-                    y: sma100,
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: 'SMA 100 (Daily)',
-                    line: { color: 'rgba(255, 255, 255, 0.4)', width: 1.5 },
-                    hovertemplate: '$%{y:.2f}<extra></extra>'
-                };
-
-                const layout = {
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    font: { family: 'DIN, Inter, sans-serif', color: '#fff' },
-                    xaxis: {
-                        type: 'category',
-                        showgrid: false,
-                        zeroline: false,
-                        showticklabels: false,
-                        fixedrange: true
-                    },
-                    yaxis: {
-                        showgrid: false,
-                        zeroline: false,
-                        showticklabels: false,
-                        fixedrange: true
-                    },
-                    margin: { t: 20, r: 0, b: 20, l: 0 },
-                    showlegend: true,
-                    legend: {
-                        x: 0,
-                        y: 1,
-                        bgcolor: 'rgba(0,0,0,0)',
-                        font: { size: 10, color: 'rgba(255,255,255,0.5)' }
-                    },
-                    hovermode: 'x unified',
-                    hoverlabel: {
-                        bgcolor: '#1e1e1e',
-                        font: { color: '#fff' },
-                        bordercolor: '#333'
-                    }
-                };
-
-                const config = {
-                    responsive: true,
-                    displayModeBar: false,
-                    staticPlot: false
-                };
-
                 Plotly.newPlot('chart', [trace1, trace2, trace3], layout, config);
 
                 // Update timestamp
