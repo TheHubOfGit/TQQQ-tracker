@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '*/15 * * * *'  # Runs every 15 minutes
   workflow_dispatch:      # Allows manual trigger
+  push:
+    branches:
+      - main
 
 jobs:
   update-data:

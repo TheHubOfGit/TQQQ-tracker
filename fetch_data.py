@@ -42,7 +42,7 @@ def fetch_and_process_data():
             'current_price': round(current_price, 2),
             'price_change': round(price_change, 2),
             'percent_change': round(percent_change, 2),
-            'is_positive': price_change >= 0
+            'is_positive': bool(price_change >= 0)
         }
     }
 
